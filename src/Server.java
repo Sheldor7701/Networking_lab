@@ -3,10 +3,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Server {
 
@@ -17,7 +14,7 @@ public class Server {
     private static int MIN_CHUNK_SIZE = 1000;
     private static int MAX_CHUNK_SIZE = 10000;
     private static long buffer = 0;
-    private static long MAX_BUFFER_SIZE = 100000;
+    private static long MAX_BUFFER_SIZE = 1000000;
 
     private static int file_id=0;
     private static int request_id=0;
@@ -135,6 +132,32 @@ public class Server {
         }
         return false;
     }
+
+    public static void deleteDirectory(File file)
+    {
+        // store all the paths of files and folders present
+        // inside directory
+        for (File subfile : file.listFiles()) {
+
+            // if it is a subfolder
+            // recursiley call function to empty subfolder
+            if (subfile.isDirectory()) {
+                deleteDirectory(subfile);
+            }
+
+            // delete files and empty subfolders
+            subfile.delete();
+        }
+    }
+
+    public static void cleanServer(){
+        File file = new File("ServerFiles");
+        deleteDirectory(file);
+
+        file = new File("Downloads");
+        deleteDirectory(file);
+    }
+
     public static void main(String[] args) throws IOException, ClassNotFoundException {
 
         clients = new HashMap<String, SocketAddress>();
@@ -146,6 +169,8 @@ public class Server {
         File directory = new File(path);
         directory.mkdir();
 
+        Scanner sc= new Scanner(System.in);
+
         while(true) {
             System.out.println("Waiting for connection...");
             Socket socket = welcomeSocket.accept();
@@ -154,6 +179,10 @@ public class Server {
             // open thread
             Thread worker = new Worker(socket);
             worker.start();
+
+            if(sc.nextLine().equalsIgnoreCase("clean")){
+                cleanServer();
+            }
         }
 
     }

@@ -277,7 +277,7 @@ public class Client {
             }
             else if( option.equalsIgnoreCase("6") ){
                 // Lookup and download other students' files
-                System.out.println("Mention the student ID :");
+                System.out.println("Mention the username :");
                 // read the student id
                 String id = sc.nextLine();
                 out.writeObject(id);
@@ -322,7 +322,14 @@ public class Client {
                     continue;
                 }
             }
-
+            else if( option.equalsIgnoreCase("7") ){
+                // user wants to logout
+                in.close();
+                out.close();
+                socket.close();
+                System.out.println("Logging out and exiting");
+                System.exit(0);
+            }
         }
     }
 

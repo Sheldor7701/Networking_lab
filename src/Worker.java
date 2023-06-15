@@ -296,7 +296,7 @@ public class Worker extends Thread {
                         out.writeObject(other_req);
                         out.writeObject(own_req);
                     }
-                    else if( option.equalsIgnoreCase("3") ){
+                    else if( option.equalsIgnoreCase("6") ){
                         // See others files and download them
                         // read the student id
                         String id = (String) in.readObject();
@@ -365,7 +365,28 @@ public class Worker extends Thread {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if(currentFile != null){
+                try {
+                    if(current_str != null){
+                        current_str.close();
+                    }
+                } catch (IOException ex) {
+                    System.out.println(ex);
+                }
+                File to_delete = new File(currentFile);
+                Server.clearBuffer(filesize);
+                boolean success = to_delete.delete();
+                if(success == true){
+                    System.out.println(currentFile + " deleting due to " + username + " going offline.");
+                }
+                else{
+                    System.out.println(currentFile + " deletion failed.");
+                }
+
+                currentFile = null;
+            }
+            System.out.println(username + " has gone offline, Logging out");
+            Server.logout(username);
         }
     }
 
