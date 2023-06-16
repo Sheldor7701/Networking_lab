@@ -137,7 +137,8 @@ public class Server {
     {
         // store all the paths of files and folders present
         // inside directory
-        for (File subfile : file.listFiles()) {
+        if(file.exists()){
+            for (File subfile : file.listFiles()) {
 
             // if it is a subfolder
             // recursiley call function to empty subfolder
@@ -147,6 +148,8 @@ public class Server {
 
             // delete files and empty subfolders
             subfile.delete();
+            }
+            file.delete();
         }
     }
 
@@ -159,6 +162,8 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
+
+        cleanServer();
 
         clients = new HashMap<String, SocketAddress>();
         serverFiles = new HashMap<Integer, String>();
@@ -179,10 +184,6 @@ public class Server {
             // open thread
             Thread worker = new Worker(socket);
             worker.start();
-
-            if(sc.nextLine().equalsIgnoreCase("clean")){
-                cleanServer();
-            }
         }
 
     }

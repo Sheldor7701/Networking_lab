@@ -52,15 +52,7 @@ class Pair {
         return uploader_id;
     }
 
-    public void setUploader_id(String uploader_id) {
-        this.uploader_id = uploader_id;
-    }
-
     public String getFilepath() {
         return filepath;
-    }
-
-    public void setFilepath(String filepath) {
-        this.filepath = filepath;
     }
 }
