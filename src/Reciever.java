@@ -15,94 +15,96 @@ public class Reciever {
         this.in = in;
     }
 
-    public String receiveFile() throws IOException, ClassNotFoundException {
-        // get file name
+    public String receive_File() throws IOException, ClassNotFoundException {
+        // Get file name
         String filename = (String) in.readObject();
-        // get file size
-        worker.filesize = (long) in.readObject();
-        System.out.println(worker.username + " wants to upload a " + type + " file " + filename + " of size : " + worker.filesize + " bytes");
-        // check buffer availability
-        boolean available = Server.checkBuffer(worker.filesize);
-        out.writeObject(available);
-        if(!available) return null;
-        // send chunk size
-        int chunk_size = Server.get_random_chunk_size();
-        out.writeObject(chunk_size);
-        worker.currentFile = "ServerFiles/" + worker.username + "/" + type + "/" + filename;
-        int fileID = Server.addFile(worker.currentFile) ;
-        out.writeObject(fileID);
-        File file=new File(worker.currentFile);
 
+        // Get file size
+        long fileSize = (long) in.readObject();
+        worker.filesize=fileSize;
+        System.out.println(worker.username + " wants to upload a " + type + " file " + filename + " of size: " + fileSize + " bytes");
+
+        // Check buffer availability
+        boolean available = Server.checkBuffer(fileSize);
+        out.writeObject(available);
+        if (!available) {
+            return null;
+        }
+
+        // Send chunk size
+        int chunkSize = Server.get_random_chunk_size();
+        out.writeObject(chunkSize);
+
+        // Get file ID
+        worker.currentFile = "ServerFiles/" + worker.username + "/" + type + "/" + filename;
+        int fileID = Server.addFile(worker.currentFile);
+        out.writeObject(fileID);
+
+        // Create file to save the received data
+        File file = new File(worker.currentFile);
         FileOutputStream fos = new FileOutputStream(file);
         BufferedOutputStream bos = new BufferedOutputStream(fos);
         worker.current_stream = fos;
 
         String acknowledge = "";
-        boolean terminate = false;
-        int bytesread = 0;
-        int total = 0;
-        long remainder = ( ( (worker.filesize % chunk_size) - 1 ) >> 31) ^ 1;
-        long loop = (worker.filesize / chunk_size) + remainder;
-        long count = 0;
-        while (count != loop) {
-            //bytesread = dis.read(contents);
+        int bytesRead = 0;
+        int totalBytesRead = 0;
+//        long loop = (worker.filesize / chunkSize) ;
+//        if((loop*chunkSize)< worker.filesize)loop++;
+
+        while (true) {
             Object o = in.readObject();
-            if( o.getClass().equals(acknowledge.getClass() ) ){
+            if (o instanceof byte[]) {
+                byte[] content = (byte[]) o;
+                bytesRead = content.length;
+                totalBytesRead += bytesRead;
+                bos.write(content, 0, bytesRead);
+            } else {
                 acknowledge = (String) o;
-                terminate = true;
                 break;
             }
-            byte[] con = (byte[]) o;
-            bytesread = con.length;
-            total += bytesread;
-            bos.write(con, 0, bytesread);
-            // simulate timeout
-//                if(count == 6){
-//                    Thread.sleep(31000);
-//                    continue;
+
+            out.writeObject(totalBytesRead + " bytes received out of " + fileSize); // sending confirmation of receiving each chunk
+
+            // timeout
+//                try {
+//                    Thread.sleep(4000);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
 //                }
-            out.writeObject(total + " bytes received out of " + worker.filesize);
-            count += 1;
         }
+
         bos.flush();
         bos.close();
         fos.close();
         worker.current_stream = null;
 
-        if(terminate == false){
-            acknowledge = (String) in.readObject();
+        System.out.println(acknowledge);
+        if (acknowledge.equalsIgnoreCase("COMPLETED")) {
+            Server.clearBuffer(totalBytesRead);
+            if (totalBytesRead == fileSize) {
+                out.writeObject("SUCCESS");
+            } else {
+                System.out.println(worker.currentFile + ": deleting due to incomplete");
+                out.writeObject("FAILURE");
+                File toDelete = new File(worker.currentFile);
+                delete_File(toDelete);
+            }
+        } else if (acknowledge.equalsIgnoreCase("TIMEOUT")) {
+            File toDelete = new File(worker.currentFile);
+            delete_File(toDelete);
         }
 
-        System.out.println(acknowledge);
-        if(acknowledge.equalsIgnoreCase("COMPLETED")){
-            Server.clearBuffer(total);
-            if(total == worker.filesize){
-                out.writeObject("SUCCESS");
-            }
-            else{
-                System.out.println( worker.currentFile + ": deleting due to incomplete" );
-                out.writeObject("FAILURE");
-                File to_delete = new File(worker.currentFile);
-                boolean success = to_delete.delete();
-                if(success == true){
-                    System.out.println( worker.currentFile + ": deleting successful");
-                }
-                else{
-                    System.out.println(worker.currentFile + " deletetion failed");
-                }
-            }
-        }
-        else if(acknowledge.equalsIgnoreCase("TIMEOUT")){
-            File to_delete = new File(worker.currentFile);
-            boolean success = to_delete.delete();
-            if(success == true){
-                System.out.println( worker.currentFile + ": deleting due to timeout");
-            }
-            else{
-                System.out.println(worker.currentFile + " deletetion failed");
-            }
-        }
         worker.currentFile = null;
         return filename;
     }
+
+    public void delete_File(File file){
+        if (file.delete()) {
+            System.out.println(worker.currentFile + ": deleting successful");
+        } else {
+            System.out.println(worker.currentFile + " deletion failed");
+        }
+    }
+
 }

@@ -10,33 +10,20 @@ public class Sender {
     }
 
     public void sendFile() throws IOException {
-    // send file size
         long length = file.length();
-        out.writeObject(length);
-        // get chunk size from server
-        int chunk_size = Server.get_max_chunk_size();
-        InputStream file_in = new FileInputStream(file); //create an inputstream from the file
-        byte[] buf = new byte[chunk_size]; //create buffer
-        int len = 0;
-        int count = 0;
-        while ((len = file_in.read(buf)) != -1) {
-            //os.write(buf, 0, len); //write buffer
-            // copy buf to len array
-            if(len == chunk_size){
-                out.writeObject(buf);
+        out.writeObject(length); // send file size
+
+        int chunk_size=Server.get_max_chunk_size();
+        out.writeObject(chunk_size); // send chunk size
+
+        byte[] buffer = new byte[Server.get_max_chunk_size()]; // create buffer
+        try (InputStream fileIn = new FileInputStream(file)) {
+            int bytesRead;
+            while ((bytesRead = fileIn.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead); // send chunk of data
             }
-            else{
-                byte[] buf2 = new byte[len];
-                System.arraycopy(buf, 0, buf2, 0, len);
-                out.writeObject(buf2);
-            }
-            out.reset();
-            count += 1;
-//                if(count == 5){
-//                    break;
-//                }
         }
         out.writeObject("COMPLETED");
-        file_in.close();
     }
+
 }

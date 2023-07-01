@@ -23,7 +23,7 @@ public class Downloader {
             if (!directory.exists()) {
                 directory.mkdir();
             }
-            path = "Downloads/"+username+"/";
+            path = "Downloads/" + username + "/";
             directory = new File(path);
 
             if (!directory.exists()) {
@@ -33,38 +33,43 @@ public class Downloader {
             // get file size
             long filesize = (long) in.readObject();
             System.out.println("Downloading " + filename + " of size " + filesize);
-            File file=new File(path + filename);
+
+            // get chunk size
+            int chunkSize = (int) in.readObject();
+            System.out.println("Using chunk size: " + chunkSize);
+
+            File file = new File(path + filename);
 
             FileOutputStream fos = new FileOutputStream(file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
-            String acknowledge = "";
-            int bytesread = 0;
-            int total = 0;
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
+            long totalBytesRead = 0;
 
-            while (true) {
-                Object o = in.readObject();
-                if( o.getClass().equals(acknowledge.getClass() ) ){
-                    acknowledge = (String) o;
+            while (totalBytesRead < filesize) {
+                int bytesToRead = (int) Math.min(chunkSize, filesize - totalBytesRead);
+                bytesRead = in.read(buffer, 0, bytesToRead);
+                if (bytesRead == -1) {
                     break;
                 }
-                byte[] con = (byte[]) o;
-                bytesread = con.length;
-                total += bytesread;
-                bos.write(con, 0, bytesread);
+                bos.write(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
             }
+
             bos.flush();
             bos.close();
             fos.close();
 
+            String acknowledge = (String) in.readObject();
             System.out.println(acknowledge);
-            if(acknowledge.equalsIgnoreCase("COMPLETED")){
-                System.out.println(" File download completed");
+            if (acknowledge.equalsIgnoreCase("COMPLETED")) {
+                System.out.println("File download completed");
             }
 
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println(e);
         }
-
     }
+
 }

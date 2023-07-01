@@ -10,14 +10,38 @@ public class Server {
     private static HashMap<String, SocketAddress> clients;
     private static HashMap<Integer, String> serverFiles;
 
-    private static ArrayList<Request> requests = new ArrayList<Request>();
+    private static ArrayList<Request> requests = new ArrayList<>();
     private static int MIN_CHUNK_SIZE = 1000;
     private static int MAX_CHUNK_SIZE = 10000;
     private static long buffer = 0;
     private static long MAX_BUFFER_SIZE = 1000000;
 
     private static int file_id=0;
-    private static int request_id=0;
+    private static int req_id =0;
+
+    public static ArrayList<String> get_active_users() {
+        Set<String> keySet = clients.keySet();
+        ArrayList<String> active_users = new ArrayList<>(keySet);
+        return active_users;
+    }
+
+    public static String[] get_all_users() {
+        File directory = new File("ServerFiles");
+        return directory.list();
+    }
+
+    public static Integer get_file_id(String filepath){
+        for (Map.Entry<Integer, String> entry : serverFiles.entrySet()) {
+            if (entry.getValue().equals(filepath)) {
+                return entry.getKey();
+            }
+        }
+        return 0;
+    }
+
+    public static String get_file_path(int file_id){
+        return serverFiles.get(file_id);
+    }
 
 
     public static boolean login(String username, SocketAddress clientIp) {
@@ -46,9 +70,9 @@ public class Server {
         clients.remove(student_id);
     }
 
-    public static void addRequest(String student_id, String description){
-        requests.add(new Request(request_id, student_id, description));
-        request_id++;
+    public static void addRequest(String username, String description){
+        requests.add(new Request(req_id, username, description));
+        req_id++;
     }
     public static void removeRequest(int request_id){
         for( int i = 0 ; i < requests.size() ; i++ ){
@@ -61,32 +85,6 @@ public class Server {
     public static ArrayList<Request> getRequests(){
         return requests;
     }
-
-    public static ArrayList<String> get_active_users() {
-        Set<String> keySet = clients.keySet();
-        ArrayList<String> active_users = new ArrayList<String>(keySet);
-        return active_users;
-    }
-
-    public static String[] get_users() {
-        File directory = new File("ServerFiles");
-        //List of all files and directories
-        return directory.list();
-    }
-
-    public static Integer get_file_id(String filepath){
-        for (Map.Entry<Integer, String> entry : serverFiles.entrySet()) {
-            if (entry.getValue().equals(filepath)) {
-                return entry.getKey();
-            }
-        }
-        return 0;
-    }
-
-    public static String get_file_path(int file_id){
-        return serverFiles.get(file_id);
-    }
-
 
     public static int get_max_chunk_size(){
         return MAX_CHUNK_SIZE;
@@ -106,7 +104,9 @@ public class Server {
     }
 
     public static int get_random_chunk_size(){
-        return (int)(Math.random()*(MAX_CHUNK_SIZE - MIN_CHUNK_SIZE + 1) + MIN_CHUNK_SIZE);
+        int max=MAX_CHUNK_SIZE;
+        int min=MIN_CHUNK_SIZE;
+        return (int)(Math.random()*(max - min + 1) + max);
     }
 
     public static int addFile(String filepath){
@@ -115,7 +115,7 @@ public class Server {
         return file_id;
     }
 
-    public static void addUpload( int req_id , String granter, String filepath){
+    public static void addUpload_to_Request( int req_id , String granter, String filepath){
         for( int i = 0 ; i < requests.size() ; i++ ){
             if(requests.get(i).getRequest_id() == req_id){
                 requests.get(i).acceptRequest(granter, filepath);
