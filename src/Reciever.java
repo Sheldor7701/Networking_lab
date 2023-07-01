@@ -91,6 +91,7 @@ public class Reciever {
                 delete_File(toDelete);
             }
         } else if (acknowledge.equalsIgnoreCase("TIMEOUT")) {
+            Server.clearBuffer(totalBytesRead);
             File toDelete = new File(worker.currentFile);
             delete_File(toDelete);
         }

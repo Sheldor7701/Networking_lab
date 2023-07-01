@@ -99,6 +99,7 @@ public class Server {
 
     public static void clearBuffer(long filesize){
         buffer -= filesize;
+        if(buffer<0)buffer=0;
         System.out.println("Buffer occupied : " + buffer + " bytes");
 
     }
